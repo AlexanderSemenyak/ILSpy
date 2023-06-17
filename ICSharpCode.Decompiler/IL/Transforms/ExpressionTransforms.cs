@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2014-2017 Daniel Grunwald
+// Copyright (c) 2014-2017 Daniel Grunwald
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this
 // software and associated documentation files (the "Software"), to deal in the Software
@@ -313,10 +313,10 @@ namespace ICSharpCode.Decompiler.IL.Transforms
 					ILInlining.InlineIfPossible(block, stmt.ChildIndex, context);
 				return;
 			}
-			if (TransformArrayInitializers.TransformSpanTArrayInitialization(inst, context, out block))
+			if (TransformArrayInitializers.TransformSpanTArrayInitialization(inst, context, out var replacement))
 			{
 				context.Step("TransformSpanTArrayInitialization: single-dim", inst);
-				inst.ReplaceWith(block);
+				inst.ReplaceWith(replacement);
 				return;
 			}
 			if (TransformDelegateCtorLdVirtFtnToLdVirtDelegate(inst, out LdVirtDelegate ldVirtDelegate))
@@ -428,11 +428,18 @@ namespace ICSharpCode.Decompiler.IL.Transforms
 			var args = inst.Arguments;
 			if (args.Count == 1)
 			{
-				int val;
-				if (args[0].MatchLdcI4(out val))
+				long val;
+				if (args[0].MatchLdcI(out val))
 				{
-					result = new LdcDecimal(val);
-					return true;
+					var paramType = inst.Method.Parameters[0].Type.GetDefinition()?.KnownTypeCode;
+					result = paramType switch {
+						KnownTypeCode.Int32 => new LdcDecimal(new decimal(unchecked((int)val))),
+						KnownTypeCode.UInt32 => new LdcDecimal(new decimal(unchecked((uint)val))),
+						KnownTypeCode.Int64 => new LdcDecimal(new decimal(val)),
+						KnownTypeCode.UInt64 => new LdcDecimal(new decimal(unchecked((ulong)val))),
+						_ => null
+					};
+					return result is not null;
 				}
 			}
 			else if (args.Count == 5)

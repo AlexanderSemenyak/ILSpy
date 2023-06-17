@@ -530,6 +530,7 @@ namespace ICSharpCode.Decompiler.CSharp
 			typeSystemAstBuilder.SupportInitAccessors = settings.InitAccessors;
 			typeSystemAstBuilder.SupportRecordClasses = settings.RecordClasses;
 			typeSystemAstBuilder.SupportRecordStructs = settings.RecordStructs;
+			typeSystemAstBuilder.SupportUnsignedRightShift = settings.UnsignedRightShift;
 			typeSystemAstBuilder.AlwaysUseGlobal = settings.AlwaysUseGlobal;
 			return typeSystemAstBuilder;
 		}
@@ -849,7 +850,7 @@ namespace ICSharpCode.Decompiler.CSharp
 										foreach (var m in closureType.GetMethods())
 										{
 											var methodDef = module.Metadata.GetMethodDefinition(m);
-											if (methodDef.Name == memberRef.Name)
+											if (methodDef.Name == memberRef.Name && m.IsCompilerGeneratedOrIsInCompilerGeneratedClass(module.Metadata))
 												connectedMethods.Enqueue(m);
 										}
 									}
@@ -1406,6 +1407,7 @@ namespace ICSharpCode.Decompiler.CSharp
 								attr.Remove();
 						}
 					}
+					RemoveCompilerFeatureRequiredAttribute(typeDecl, "RefStructs");
 				}
 				if (settings.RequiredMembers)
 				{
@@ -1838,6 +1840,30 @@ namespace ICSharpCode.Decompiler.CSharp
 				{
 					var symbol = attr.Type.GetSymbol();
 					if (symbol is ITypeDefinition td && td.FullTypeName == attributeType.GetTypeName())
+					{
+						attr.Remove();
+						found = true;
+					}
+				}
+				if (section.Attributes.Count == 0)
+				{
+					section.Remove();
+				}
+			}
+			return found;
+		}
+
+		internal static bool RemoveCompilerFeatureRequiredAttribute(EntityDeclaration entityDecl, string feature)
+		{
+			bool found = false;
+			foreach (var section in entityDecl.Attributes)
+			{
+				foreach (var attr in section.Attributes)
+				{
+					var symbol = attr.Type.GetSymbol();
+					if (symbol is ITypeDefinition td && td.FullTypeName == KnownAttribute.CompilerFeatureRequired.GetTypeName()
+						&& attr.Arguments.Count == 1 && attr.Arguments.SingleOrDefault() is PrimitiveExpression pe
+						&& pe.Value is string s && s == feature)
 					{
 						attr.Remove();
 						found = true;
