@@ -3,8 +3,12 @@
 @for /D %%M in ("%ProgramFiles%\Microsoft Visual Studio\2022"\*) do (
     @if exist "%%M\MSBuild\Current\Bin\MSBuild.exe" (
         @set "MSBUILD=%%M\MSBuild\Current\Bin\MSBuild.exe"
+        goto :ex
     )
 )
+
+:ex
+
 @if "%MSBUILD%" == "" (
     @echo Could not find VS2022 MSBuild
     @exit /b 1
