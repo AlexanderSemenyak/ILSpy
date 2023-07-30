@@ -155,12 +155,13 @@ namespace ICSharpCode.Decompiler
 				numericIntPtr = false;
 				utf8StringLiterals = false;
 				unsignedRightShift = false;
+				checkedOperators = false;
 			}
 		}
 
 		public CSharp.LanguageVersion GetMinimumRequiredVersion()
 		{
-			if (parameterNullCheck || scopedRef || requiredMembers || numericIntPtr || utf8StringLiterals || unsignedRightShift)
+			if (parameterNullCheck || scopedRef || requiredMembers || numericIntPtr || utf8StringLiterals || unsignedRightShift || checkedOperators)
 				return CSharp.LanguageVersion.CSharp11_0;
 			if (fileScopedNamespaces || recordStructs)
 				return CSharp.LanguageVersion.CSharp10_0;
@@ -378,6 +379,7 @@ namespace ICSharpCode.Decompiler
 		}
 
 		[Obsolete("Renamed to ScopedRef. This property will be removed in a future version of the decompiler.")]
+		[Browsable(false)]
 		public bool LifetimeAnnotations {
 			get { return ScopedRef; }
 			set { ScopedRef = value; }
@@ -1213,6 +1215,24 @@ namespace ICSharpCode.Decompiler
 				if (unsignedRightShift != value)
 				{
 					unsignedRightShift = value;
+					OnPropertyChanged();
+				}
+			}
+		}
+
+		bool checkedOperators = true;
+
+		/// <summary>
+		/// Gets/Sets whether to use C# 11.0 user-defined checked operators.
+		/// </summary>
+		[Category("C# 11.0 / VS 2022.4")]
+		[Description("DecompilerSettings.CheckedOperators")]
+		public bool CheckedOperators {
+			get { return checkedOperators; }
+			set {
+				if (checkedOperators != value)
+				{
+					checkedOperators = value;
 					OnPropertyChanged();
 				}
 			}
